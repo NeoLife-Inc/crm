@@ -26,9 +26,9 @@ export class TrpcContext implements TRPCContext {
 				const result = await auth.api
 					.verifyApiKey({ body: { key } })
 					.catch(() => null);
-				if (result?.valid && result.userId) {
-					const user = await db.user.findUnique({
-						where: { id: result.userId },
+			if (result?.valid && result.key?.referenceId) {
+				const user = await db.user.findUnique({
+					where: { id: result.key.referenceId },
 						select: {
 							id: true,
 							email: true,

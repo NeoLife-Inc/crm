@@ -10,6 +10,7 @@ export default defineAgent({
 		fallback: DEFAULT_AGENT_MODEL.id,
 		events: { "session.started": () => selectedModel() },
 	}),
+	modelContextWindowTokens: DEFAULT_AGENT_MODEL.contextWindowTokens, // NEOLIFE (CRMA2.2)
 	outputSchema: z.object({
 		status: z.literal("draft_ready"),
 		summary: z.string().min(1).max(1000),

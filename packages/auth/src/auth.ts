@@ -129,11 +129,11 @@ export const auth = betterAuth({
 		// Enables Bearer-token sessions for automated agents and MCP tools.
 		// Keys are prefixed with `neolife_` and verified via auth.api.verifyApiKey().
 		apiKey({
-			prefix: "neolife_",
+			defaultPrefix: "neolife_",
 			rateLimit: {
 				enabled: true,
-				timeWindow: 60,
-				max: 100,
+				timeWindow: 60000,
+				maxRequests: 100,
 			},
 		}),
 	],

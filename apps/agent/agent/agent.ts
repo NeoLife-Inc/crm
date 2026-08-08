@@ -19,6 +19,7 @@ export default defineAgent({
 		fallback: DEFAULT_AGENT_MODEL.id,
 		events: { "session.started": () => selectedModel() },
 	}),
+	modelContextWindowTokens: DEFAULT_AGENT_MODEL.contextWindowTokens, // NEOLIFE (CRMA2.2): provide context window so eve build does not need AI Gateway catalog lookup
 	limits: {
 		maxInputTokensPerSession: 500_000,
 		maxOutputTokensPerSession: 50_000,
