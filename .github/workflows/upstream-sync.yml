@@ -1,0 +1,141 @@
+# NEOLIFE (CRMA2.7): Weekly upstream sync workflow.
+# Fetches trycompai/crm release branch, merges into a new branch,
+# and opens a PR for review. If conflicts exist, the PR body lists them.
+name: Upstream Sync
+
+on:
+  schedule:
+    # Every Monday at 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "neolife-bot"
+          git config user.email "bot@neolife.health"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/trycompai/crm.git 2>/dev/null || true
+          git fetch upstream release
+
+      - name: Create sync branch
+        run: |
+          BRANCH="chore/upstream-sync-$(date -u +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          echo "SYNC_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Merge upstream
+        id: merge
+        continue-on-error: true
+        run: |
+          if git merge upstream/release --no-edit; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=conflict" >> "$GITHUB_OUTPUT"
+            # Abort the merge so the branch is clean for the PR
+            git merge --abort
+            # Reset to main and create a PR noting the conflicts
+            git reset --hard origin/main
+          fi
+
+      - name: List conflicting files (on conflict)
+        if: steps.merge.outputs.status == 'conflict'
+        id: conflicts
+        continue-on-error: true
+        run: |
+          git merge upstream/release --no-commit --no-ff 2>/dev/null || true
+          CONFLICTS=$(git diff --name-only --diff-filter=U | head -50)
+          git merge --abort 2>/dev/null || true
+          {
+            echo "files<<EOF"
+            echo "$CONFLICTS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Push branch
+        run: |
+          git push origin "$SYNC_BRANCH"
+
+      - name: Create PR (clean merge)
+        if: steps.merge.outputs.status == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: process.env.SYNC_BRANCH,
+              base: 'main',
+              title: `chore: weekly upstream sync ${new Date().toISOString().slice(0,10)}`,
+              body: [
+                '## Upstream Sync',
+                '',
+                'Automated merge of `trycompai/crm@release` into `main`.',
+                '',
+                '### NeoLife rebase checklist',
+                '',
+                'After merging, verify all items in `README-NEOLIFE.md` survive:',
+                '',
+                '1. `packages/db/src/settings.ts` — `DEFAULT_AGENT_MODEL` is Anthropic',
+                '2. `apps/agent/agent/lib/neolife-boot.ts` exists',
+                '3. `apps/agent/agent/agent.ts` calls `assertModelRouting()`',
+                '4. `apps/app/lib/onboarding.ts` — `CONTEXT_GATE_OPTIONAL` gate',
+                '5. `apps/app/**/onboarding-form.tsx` — `researchOptional` prop',
+                '6. `packages/auth/src/auth.ts` — `apiKey()` plugin',
+                '7. `apps/api/src/trpc/trpc.context.ts` — Bearer token fallback',
+                '8. `apps/api/scripts/mint-api-key.ts` exists',
+                '9. `packages/db/src/blob.ts` — S3 upload path',
+                '10. Eve pinned to exact `0.29.4`',
+                '11. `apps/api/src/generated/server.ts` committed',
+              ].join('\n'),
+            });
+
+      - name: Create PR (conflicts)
+        if: steps.merge.outputs.status == 'conflict'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const conflictFiles = `${{ steps.conflicts.outputs.files }}`;
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: process.env.SYNC_BRANCH,
+              base: 'main',
+              title: `chore: upstream sync ${new Date().toISOString().slice(0,10)} — MANUAL RESOLUTION NEEDED`,
+              body: [
+                '## Upstream Sync — Conflicts Detected',
+                '',
+                'The automated merge of `trycompai/crm@release` produced conflicts.',
+                'Manual resolution is required.',
+                '',
+                '### Conflicting files',
+                '',
+                '```',
+                conflictFiles || '(could not list — run merge locally to see)',
+                '```',
+                '',
+                '### How to resolve',
+                '',
+                '```sh',
+                'git fetch upstream release',
+                'git checkout -b chore/upstream-sync-manual main',
+                'git merge upstream/release',
+                '# resolve conflicts, then verify README-NEOLIFE.md rebase checklist',
+                '```',
+              ].join('\n'),
+            });

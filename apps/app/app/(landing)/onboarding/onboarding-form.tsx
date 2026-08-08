@@ -22,7 +22,13 @@ import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTRPC } from "@/lib/trpc/client";
 
-export function OnboardingForm({ placeholder }: { placeholder: string }) {
+export function OnboardingForm({
+	placeholder,
+	researchOptional = false,
+}: {
+	placeholder: string;
+	researchOptional?: boolean;
+}) {
 	const trpc = useTRPC();
 	const router = useRouter();
 
@@ -37,7 +43,8 @@ export function OnboardingForm({ placeholder }: { placeholder: string }) {
 		trpc.workspace.update.mutationOptions({
 			onSuccess: () => {
 				router.refresh();
-				router.replace("/onboarding/research");
+				// NEOLIFE (CRMA2.3): Skip research key onboarding when gate is optional
+				router.replace(researchOptional ? "/" : "/onboarding/research");
 			},
 			onError: (error) => toast.error(error.message),
 		}),

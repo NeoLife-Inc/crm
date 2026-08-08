@@ -5,7 +5,9 @@ import { onTelemetryProblem, syncVersion } from "@crm/telemetry";
 import { defineAgent, defineDynamic } from "eve";
 import { logCapabilities } from "./lib/capabilities";
 import { selectedModel } from "./lib/model";
+import { assertModelRouting } from "./lib/neolife-boot"; // NEOLIFE (CRMA2.2)
 
+assertModelRouting(); // NEOLIFE (CRMA2.2): verify Anthropic routing at boot
 void logCapabilities();
 
 onTelemetryProblem((message) => console.debug(`[telemetry] ${message}`));

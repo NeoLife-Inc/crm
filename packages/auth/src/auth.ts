@@ -1,3 +1,4 @@
+import { apiKey } from "@better-auth/api-key";
 import { sso } from "@better-auth/sso";
 import { db } from "@crm/db";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
@@ -122,6 +123,18 @@ export const auth = betterAuth({
 
 		sso({
 			organizationProvisioning: { disabled: true },
+		}),
+
+		// NEOLIFE (CRMA2.4): API key plugin for headless auth.
+		// Enables Bearer-token sessions for automated agents and MCP tools.
+		// Keys are prefixed with `neolife_` and verified via auth.api.verifyApiKey().
+		apiKey({
+			prefix: "neolife_",
+			rateLimit: {
+				enabled: true,
+				timeWindow: 60,
+				max: 100,
+			},
 		}),
 	],
 
