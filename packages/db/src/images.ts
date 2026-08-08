@@ -1,5 +1,17 @@
 export const BLOB_HOST_SUFFIX = ".blob.vercel-storage.com";
 
+// NEOLIFE (CRMA2.5): S3 mirror host suffix, configurable via env.
+export const S3_MIRROR_HOST_SUFFIX =
+	process.env.S3_PUBLIC_URL
+		? (() => {
+				try {
+					return `.${new URL(process.env.S3_PUBLIC_URL).hostname}`;
+				} catch {
+					return ".amazonaws.com";
+				}
+			})()
+		: ".amazonaws.com";
+
 export const COMPANY_IMAGE_FIELDS = [
 	"logoUrl",
 	"logoDarkUrl",
@@ -14,7 +26,8 @@ const OPTIMIZABLE = new Set(["jpg", "jpeg", "png", "webp", "avif", "gif"]);
 export function isMirrored(url: string | null | undefined): boolean {
 	if (!url) return false;
 	try {
-		return new URL(url).hostname.endsWith(BLOB_HOST_SUFFIX);
+		const hostname = new URL(url).hostname;
+		return hostname.endsWith(BLOB_HOST_SUFFIX) || hostname.endsWith(S3_MIRROR_HOST_SUFFIX);
 	} catch {
 		return false;
 	}

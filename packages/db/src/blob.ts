@@ -18,8 +18,24 @@ const ALLOWED: Record<string, string> = {
 	"image/vnd.microsoft.icon": "ico",
 };
 
+// NEOLIFE (CRMA2.5): S3 configuration. When S3_BUCKET is set, mirror() uses
+// S3 instead of @vercel/blob. This is additive — if S3_BUCKET is unset, the
+// original Vercel Blob path runs unchanged.
+function s3Config() {
+	const bucket = process.env.S3_BUCKET;
+	if (!bucket) return null;
+	return {
+		bucket,
+		region: process.env.S3_REGION ?? "us-east-1",
+		accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
+		secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
+		publicUrl: process.env.S3_PUBLIC_URL ?? `https://${bucket}.s3.${process.env.S3_REGION ?? "us-east-1"}.amazonaws.com`,
+		endpoint: process.env.S3_ENDPOINT,
+	};
+}
+
 export function blobEnabled(): boolean {
-	return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+	return Boolean(s3Config() || process.env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 
 export async function mirror(
@@ -46,9 +62,17 @@ export async function mirror(
 			.digest("hex")
 			.slice(0, 12);
 
+		const key = `${prefix}-${digest}.${extension}`;
+
+		// NEOLIFE (CRMA2.5): Prefer S3 when configured; fall back to Vercel Blob.
+		const cfg = s3Config();
+		if (cfg) {
+			return await uploadToS3(cfg, key, bytes, type);
+		}
+
 		const { put } = await import("@vercel/blob");
 
-		const blob = await put(`${prefix}-${digest}.${extension}`, bytes, {
+		const blob = await put(key, bytes, {
 			access: "public",
 			contentType: type,
 			addRandomSuffix: false,
@@ -59,6 +83,37 @@ export async function mirror(
 	} catch {
 		return null;
 	}
+}
+
+// NEOLIFE (CRMA2.5): S3 upload helper.
+async function uploadToS3(
+	cfg: NonNullable<ReturnType<typeof s3Config>>,
+	key: string,
+	bytes: Buffer,
+	contentType: string,
+): Promise<string> {
+	const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+
+	const client = new S3Client({
+		region: cfg.region,
+		credentials: {
+			accessKeyId: cfg.accessKeyId,
+			secretAccessKey: cfg.secretAccessKey,
+		},
+		...(cfg.endpoint ? { endpoint: cfg.endpoint } : {}),
+	});
+
+	await client.send(
+		new PutObjectCommand({
+			Bucket: cfg.bucket,
+			Key: key,
+			Body: bytes,
+			ContentType: contentType,
+			ACL: "public-read",
+		}),
+	);
+
+	return `${cfg.publicUrl}/${key}`;
 }
 
 async function readCapped(response: Response): Promise<Buffer | null> {

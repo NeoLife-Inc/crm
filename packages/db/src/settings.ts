@@ -7,9 +7,12 @@ import {
 
 export const SETTINGS_ID = "app";
 
+// NEOLIFE (CRMA2.2): Default model changed from zai/glm-5.2-fast to Anthropic.
+// Requires AI_GATEWAY_API_KEY with Anthropic BYOK on the Vercel AI Gateway.
+// See README-NEOLIFE.md rebase checklist.
 export const DEFAULT_AGENT_MODEL = {
-	id: "zai/glm-5.2-fast",
-	contextWindowTokens: 1_000_000,
+	id: "anthropic/claude-sonnet-4-20250514",
+	contextWindowTokens: 200_000,
 } as const;
 
 export interface AgentModelSetting {

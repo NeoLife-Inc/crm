@@ -58,6 +58,12 @@ export async function readWorkspaceGate(
 }
 
 export async function readResearchGate(request: NextRequest): Promise<Gate> {
+	// NEOLIFE (CRMA2.3): Skip the Context.dev research key gate when
+	// CONTEXT_GATE_OPTIONAL=1 is set. The agent degrades gracefully without a
+	// Context.dev key; the onboarding form should not hard-block on it.
+	// See README-NEOLIFE.md rebase checklist.
+	if (process.env.CONTEXT_GATE_OPTIONAL === "1") return "settled";
+
 	const key = await read<{ configured?: boolean }>(
 		request,
 		"settings.researchKey",

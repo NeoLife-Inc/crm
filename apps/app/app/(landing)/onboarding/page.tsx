@@ -20,7 +20,10 @@ export default async function OnboardingPage() {
 				description="Two things, once. The name is what the CRM calls you; the website is how the agent learns what you sell."
 			/>
 
-			<OnboardingForm placeholder={DEFAULT_WORKSPACE_NAME} />
+			<OnboardingForm
+				placeholder={DEFAULT_WORKSPACE_NAME}
+				researchOptional={process.env.CONTEXT_GATE_OPTIONAL === "1"}
+			/>
 		</AuthShell>
 	);
 }
