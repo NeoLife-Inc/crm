@@ -1,5 +1,5 @@
 import { defaultBackend, defineSandbox } from "eve/sandbox";
-import { neolifeSandboxBackend } from "../../lib/neolife-sandbox";
+import { neolifeSandboxBackend } from "../../../lib/neolife-sandbox";
 
 const _choice = neolifeSandboxBackend();
 

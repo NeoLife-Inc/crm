@@ -32,6 +32,7 @@ export default defineAgent({
 			},
 		},
 	}),
+	modelContextWindowTokens: DEFAULT_AGENT_MODEL.contextWindowTokens, // NEOLIFE (CRMA2.2)
 	outputSchema: z.object({
 		summary: z.string().min(1).max(1000),
 		result: z.record(z.string(), z.unknown()).nullable(),
