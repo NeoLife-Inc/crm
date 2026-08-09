@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.5.0](https://github.com/NeoLife-Inc/crm/compare/v1.4.0...v1.5.0) (2026-08-09)
+
+
+### Features
+
+* **agent:** bound agent builder retries and improve chat scrolling ([#89](https://github.com/NeoLife-Inc/crm/issues/89)) ([7780f81](https://github.com/NeoLife-Inc/crm/commit/7780f81a219813fcf54e6b5dd612a7d40e31d32b))
+* **auth:** add magic link sign-in via Resend email ([5cab4e6](https://github.com/NeoLife-Inc/crm/commit/5cab4e6ea60aba92b804aa0247ccf7a3f2ec81ec))
+* **crma2:** governance fixes — model routing, context gate, headless auth, S3 blob, governance doc, upstream sync, ARM64 sandbox ([#1](https://github.com/NeoLife-Inc/crm/issues/1)) ([705ae2d](https://github.com/NeoLife-Inc/crm/commit/705ae2d96a587c03028a0ce9addb055001b648ef))
+
+
+### Fixes
+
+* **crma2:** apiKey config, verifyApiKey response shape, agent build, subagent imports ([#2](https://github.com/NeoLife-Inc/crm/issues/2)) ([83cd403](https://github.com/NeoLife-Inc/crm/commit/83cd40355a5439cd4e5c33be769991bbbb24ae55))
+* **crma2:** update bun.lock for new dependencies (@better-auth/api-key, @aws-sdk/client-s3) ([080ace8](https://github.com/NeoLife-Inc/crm/commit/080ace8e72c8333bdc000094b67ecd492623e8a7))
+
 ## [1.4.0](https://github.com/trycompai/crm/compare/v1.3.0...v1.4.0) (2026-08-07)
 
 
