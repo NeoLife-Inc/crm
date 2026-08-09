@@ -1,9 +1,10 @@
 import { ssoClient } from "@better-auth/sso/client";
 import { createAuthClient } from "better-auth/react";
+import { magicLinkClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
 	baseURL: typeof window === "undefined" ? undefined : window.location.origin,
-	plugins: [ssoClient()],
+	plugins: [ssoClient(), magicLinkClient()],
 });
 
 export const { getSession, signIn, signOut, useSession } = authClient;

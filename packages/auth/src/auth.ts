@@ -4,6 +4,7 @@ import { db } from "@crm/db";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
+import { magicLink } from "better-auth/plugins/magic-link";
 import { organization } from "better-auth/plugins/organization";
 import { AUTH_COOKIE_PREFIX } from "./cookies";
 import { env } from "./env";
@@ -135,6 +136,55 @@ export const auth = betterAuth({
 				timeWindow: 60000,
 				maxRequests: 100,
 			},
+		}),
+
+		// NEOLIFE: Magic link plugin — email-based passwordless sign-in.
+		// Sends a one-time link to the user's email via Resend.
+		// Auto-creates users on first sign-in (subject to ALLOWED_SIGN_IN allow-list).
+		magicLink({
+			sendMagicLink: async ({ email, url }) => {
+				const apiKey = process.env.RESEND_API_KEY;
+				const from =
+					process.env.RESEND_FROM ??
+					"Neolife CRM <hello@neolife.health>";
+
+				if (!apiKey) {
+					console.error(
+						"[auth] RESEND_API_KEY not set — cannot send magic link email",
+					);
+					throw new Error("Email service not configured");
+				}
+
+				const response = await fetch("https://api.resend.com/emails", {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${apiKey}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						from,
+						to: [email],
+						subject: "Sign in to Neolife CRM",
+						html: [
+							'<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">',
+							'<h1 style="font-size:20px;font-weight:600;margin:0 0 16px">Sign in to Neolife CRM</h1>',
+							'<p style="color:#666;font-size:14px;margin:0 0 24px">Click the button below to sign in securely. This link expires in 10 minutes.</p>',
+							`<a href="${url}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500">Sign in to Neolife CRM</a>`,
+							'<p style="color:#999;font-size:12px;margin:24px 0 0">If you didn\u2019t request this link, you can safely ignore this email.</p>',
+							"</div>",
+						].join("\n"),
+					}),
+				});
+
+				if (!response.ok) {
+					const text = await response.text().catch(() => "unknown error");
+					console.error(
+						`[auth] Resend email failed: ${response.status} ${text}`,
+					);
+					throw new Error("Could not send magic link email");
+				}
+			},
+			expiresIn: 600, // 10 minutes
 		}),
 	],
 
